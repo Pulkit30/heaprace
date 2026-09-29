@@ -4,7 +4,14 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/app/auth/actions";
 
-export default function UserMenu({ name, email, image }: { name: string; email: string; image: string | null }) {
+interface Props {
+  id: string;
+  name: string;
+  email: string;
+  image: string | null;
+}
+
+export default function UserMenu({ id, name, email, image }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -48,6 +55,22 @@ export default function UserMenu({ name, email, image }: { name: string; email: 
             <p className="truncate text-sm font-medium">{name}</p>
             <p className="truncate text-xs text-muted">{email}</p>
           </div>
+          <Link
+            href={`/u/${id}`}
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2 text-sm transition-colors hover:bg-surface-2"
+          >
+            My profile
+          </Link>
+          <Link
+            href="/progress"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2 text-sm transition-colors hover:bg-surface-2"
+          >
+            My progress
+          </Link>
           <Link
             href="/submissions"
             role="menuitem"

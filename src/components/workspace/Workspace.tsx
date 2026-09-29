@@ -7,7 +7,8 @@ import type { Problem } from "@/lib/problems";
 import { judge, runner, type JudgeResult, type RunnerStatus } from "@/lib/judge/runner";
 import { clearCode } from "@/lib/drafts";
 import type { SubmissionRow } from "@/lib/queries";
-import { saveSubmission } from "@/app/problems/[slug]/actions";
+import { submitSolution } from "@/app/problems/[slug]/actions";
+import type { SubmitResult } from "@/lib/submit";
 import type { EditorInstance } from "./CodeEditor";
 import EditorPlaceholder from "./EditorPlaceholder";
 import Console, { type ConsoleTab } from "./Console";
@@ -25,15 +26,32 @@ function useRunnerStatus(): RunnerStatus {
   );
 }
 
-export type SaveState = "saving" | "saved" | "signed-out" | "error" | null;
+export type SaveState = "saved" | "signed-out" | null;
 
 interface Props {
+  /** The problem with its sample tests only; hidden tests stay on the server. */
   problem: Problem;
   signedIn: boolean;
   initialSubmissions: SubmissionRow[];
+  /** Overrides how Submit is judged (race mode passes its own). Defaults to the practice submit. */
+  submit?: (code: string) => Promise<SubmitResult>;
+  /** Extra left-panel tab, e.g. the race leaderboard. */
+  extraTab?: { label: string; content: React.ReactNode };
+  /** Where the code draft is saved in the browser. Defaults to the problem slug; races use their own key. */
+  draftKey?: string;
+  /** Desktop height of the workspace. Race mode subtracts its timer bar. */
+  heightClass?: string;
 }
 
-export default function Workspace({ problem, signedIn, initialSubmissions }: Props) {
+export default function Workspace({
+  problem,
+  signedIn,
+  initialSubmissions,
+  submit,
+  extraTab,
+  draftKey = problem.slug,
+  heightClass = "lg:h-[calc(100dvh-3.5rem)]",
+}: Props) {
   const editorRef = useRef<EditorInstance | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const colRef = useRef<HTMLDivElement>(null);
@@ -46,7 +64,7 @@ export default function Workspace({ problem, signedIn, initialSubmissions }: Pro
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<JudgeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [leftTab, setLeftTab] = useState<"description" | "submissions">("description");
+  const [leftTab, setLeftTab] = useState<"description" | "submissions" | "extra">("description");
   const [submissions, setSubmissions] = useState(initialSubmissions);
   const [saveState, setSaveState] = useState<SaveState>(null);
   const solved = submissions.some((s) => s.verdict === "Accepted");
@@ -67,42 +85,29 @@ export default function Workspace({ problem, signedIn, initialSubmissions }: Pro
     setSaveState(null);
     setProgress({ done: 0, total: 0 });
     try {
-      const r = await judge(problem, code, mode, (done, total) => setProgress({ done, total }));
-      setResult(r);
-      if (mode === "submit") void save(code, r);
+      if (mode === "run") {
+        // Run: sample tests in the browser, instant and free.
+        setResult(await judge(problem, code, "run", (done, total) => setProgress({ done, total })));
+      } else if (!signedIn) {
+        setSaveState("signed-out");
+      } else {
+        // Submit: every test, judged on the server.
+        const res = await (submit ?? ((c: string) => submitSolution({ slug: problem.slug, code: c })))(code);
+        if (res.ok) {
+          setResult(res.result);
+          setSubmissions((prev) => [res.submission, ...prev]);
+          setSaveState("saved");
+        } else if (res.reason === "signed-out") {
+          setSaveState("signed-out");
+        } else {
+          setError(res.message);
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setProgress(null);
       setBusy(false);
-    }
-  }
-
-  async function save(code: string, r: JudgeResult) {
-    if (!signedIn) {
-      setSaveState("signed-out");
-      return;
-    }
-    setSaveState("saving");
-    const failed = r.cases.find((c) => c.verdict !== "Accepted");
-    try {
-      const res = await saveSubmission({
-        slug: problem.slug,
-        code,
-        verdict: r.verdict,
-        passed: r.passed,
-        total: r.total,
-        runtimeMs: r.timeMs,
-        failedTest: failed ? failed.index : null,
-      });
-      if (res.ok) {
-        setSubmissions((prev) => [res.submission, ...prev]);
-        setSaveState("saved");
-      } else {
-        setSaveState(res.reason === "signed-out" ? "signed-out" : "error");
-      }
-    } catch {
-      setSaveState("error");
     }
   }
 
@@ -119,7 +124,7 @@ export default function Workspace({ problem, signedIn, initialSubmissions }: Pro
 
   function resetCode() {
     if (!confirm("Reset to the starter code? Your current code will be lost.")) return;
-    clearCode(problem.slug);
+    clearCode(draftKey);
     editorRef.current?.setValue(problem.starterCode);
   }
 
@@ -134,29 +139,37 @@ export default function Workspace({ problem, signedIn, initialSubmissions }: Pro
     <div
       ref={rowRef}
       style={{ "--left": `${leftPct}%`, "--top": `${topPct}%` } as React.CSSProperties}
-      className="flex min-h-0 flex-1 flex-col gap-2 p-2 lg:grid lg:h-[calc(100dvh-3.5rem)] lg:grid-cols-[var(--left)_6px_minmax(0,1fr)] lg:gap-0"
+      className={`flex min-h-0 flex-1 flex-col gap-2 p-2 lg:grid ${heightClass} lg:grid-cols-[var(--left)_6px_minmax(0,1fr)] lg:gap-0`}
     >
       <section className="min-h-0 overflow-auto rounded-lg border border-line bg-surface">
         <div className="sticky top-0 z-10 flex items-center gap-1 border-b border-line bg-surface px-2 text-sm">
           <Link href="/problems" className="px-2 py-2 text-muted hover:text-fg" aria-label="Back to problems">
             ←
           </Link>
-          {(["description", "submissions"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setLeftTab(t)}
-              aria-pressed={leftTab === t}
-              className={`border-b-2 px-3 py-2 transition-colors ${
-                leftTab === t ? "border-accent-fill text-fg" : "border-transparent text-muted hover:text-fg"
-              }`}
-            >
-              {t === "description" ? "Description" : `Submissions${submissions.length ? ` (${submissions.length})` : ""}`}
-            </button>
-          ))}
+          {(extraTab ? (["description", "extra", "submissions"] as const) : (["description", "submissions"] as const)).map(
+            (t) => (
+              <button
+                key={t}
+                onClick={() => setLeftTab(t)}
+                aria-pressed={leftTab === t}
+                className={`border-b-2 px-3 py-2 transition-colors ${
+                  leftTab === t ? "border-accent-fill text-fg" : "border-transparent text-muted hover:text-fg"
+                }`}
+              >
+                {t === "description"
+                  ? "Description"
+                  : t === "extra"
+                    ? extraTab?.label
+                    : `Submissions${submissions.length ? ` (${submissions.length})` : ""}`}
+              </button>
+            ),
+          )}
           {solved && <span className="ml-auto pr-2 text-xs font-medium text-easy">Solved ✓</span>}
         </div>
         {leftTab === "description" ? (
           <Description problem={problem} />
+        ) : leftTab === "extra" ? (
+          extraTab?.content
         ) : (
           <SubmissionsPanel
             submissions={submissions}
@@ -193,7 +206,7 @@ export default function Workspace({ problem, signedIn, initialSubmissions }: Pro
           </div>
           <div className="min-h-0 flex-1">
             <CodeEditor
-              slug={problem.slug}
+              slug={draftKey}
               starterCode={problem.starterCode}
               onMount={(editor, monaco) => {
                 editorRef.current = editor;

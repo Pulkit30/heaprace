@@ -26,6 +26,8 @@ try {
         params: p.params,
         starterCode: p.starterCode,
         compare: p.compare,
+        argTypes: p.argTypes ?? null,
+        returnType: p.returnType ?? null,
       };
       await tx
         .insert(schema.problems)

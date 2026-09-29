@@ -41,6 +41,7 @@ next-env.d.ts
 
 # Pyodide runtime, copied from node_modules by scripts/copy-pyodide.ts
 /public/pyodide/
+/public/judge-harness.py
 
 # editor / local tooling
 .vscode/

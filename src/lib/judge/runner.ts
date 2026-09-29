@@ -1,6 +1,6 @@
 "use client";
 
-import type { Problem, TestCase } from "../problems";
+import type { NodeType, Problem, TestCase } from "../problems";
 import { isCorrect } from "./compare";
 
 // Phase 1 judges in the browser, so a determined user can fake a result.
@@ -92,7 +92,12 @@ class PythonRunner {
   }
 
   /** Runs one test. Resolves "timeout" if it exceeds the limit; the worker is then killed and restarted. */
-  async runOne(code: string, functionName: string, args: unknown[]): Promise<WorkerResult | "timeout"> {
+  async runOne(
+    code: string,
+    functionName: string,
+    args: unknown[],
+    nodes: { argTypes?: (NodeType | null)[]; returnType?: NodeType } = {},
+  ): Promise<WorkerResult | "timeout"> {
     await this.ensureReady();
     const worker = this.worker!;
     const id = this.nextId++;
@@ -110,7 +115,15 @@ class PythonRunner {
         resolve(e.data);
       };
       worker.addEventListener("message", onMessage);
-      worker.postMessage({ type: "run", id, code, functionName, args });
+      worker.postMessage({
+        type: "run",
+        id,
+        code,
+        functionName,
+        args,
+        argTypes: nodes.argTypes ?? null,
+        returnType: nodes.returnType ?? null,
+      });
     });
   }
 }
@@ -134,7 +147,7 @@ export async function judge(
 
   for (const { test, index } of tests) {
     onProgress?.(cases.length, tests.length);
-    const r = await runner.runOne(code, problem.functionName, test.args);
+    const r = await runner.runOne(code, problem.functionName, test.args, problem);
     let c: CaseResult;
     if (r === "timeout") {
       c = { index, test, verdict: "Time Limit Exceeded", stdout: "", timeMs: TIME_LIMIT_MS };

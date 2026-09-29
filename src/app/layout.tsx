@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Navbar from "@/components/Navbar";
+import TimezoneSync from "@/components/TimezoneSync";
 import { themeInitScript } from "@/lib/theme-script";
 import "./globals.css";
 
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="flex min-h-full flex-col font-sans">
+        <TimezoneSync />
         <Navbar />
         {children}
       </body>

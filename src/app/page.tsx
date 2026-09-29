@@ -5,7 +5,7 @@ const features = [
   { title: "Run Python instantly", body: "Your code runs right in the browser. No setup, no waiting in a queue." },
   { title: "Real verdicts", body: "Accepted, Wrong Answer, Runtime Error or Time Limit Exceeded, with the failing input shown." },
   { title: "Track your progress", body: "Sign in to save every submission and see what you've solved." },
-  { title: "Race mode (soon)", body: "Go head to head with friends on the same problem. First correct submission wins." },
+  { title: "Race mode", body: "Go head to head with friends on the same problem. First correct submission wins." },
 ];
 
 export default async function Home() {

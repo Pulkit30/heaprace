@@ -1,0 +1,11 @@
+# Never upload local secrets or machine-specific files to Vercel.
+.env
+.env.*
+!.env.example
+.neon
+.claude
+node_modules
+.next
+# Regenerated during the build by scripts/copy-pyodide.ts
+public/pyodide
+public/judge-harness.py

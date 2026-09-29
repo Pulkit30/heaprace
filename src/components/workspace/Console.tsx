@@ -65,17 +65,15 @@ export default function Console({ problem, tab, onTabChange, result, progress, e
 }
 
 function SaveNote({ state, signInHref }: { state: SaveState; signInHref: string }) {
-  if (state === "saving") return <p className="mb-3 text-xs text-muted">Saving submission…</p>;
   if (state === "saved") return <p className="mb-3 text-xs text-muted">Saved to your submissions.</p>;
-  if (state === "error") return <p className="mb-3 text-xs text-hard">Couldn&apos;t save this submission. Try submitting again.</p>;
   if (state === "signed-out")
     return (
-      <p className="mb-3 text-xs text-muted">
-        Not saved.{" "}
+      <p className="text-sm text-muted">
         <Link href={signInHref} className="text-accent hover:underline">
           Sign in
         </Link>{" "}
-        to keep your submissions and progress.
+        to submit. Submissions are judged on our server against hidden tests. You can still use Run to try the
+        sample tests.
       </p>
     );
   return null;
@@ -85,11 +83,14 @@ function ResultView({ problem, result, progress, error, saveState, signInHref }:
   if (progress) {
     return (
       <p className="text-sm text-muted">
-        Running test {Math.min(progress.done + 1, progress.total)} of {progress.total}…
+        {progress.total === 0
+          ? "Judging your code against every test…"
+          : `Running test ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…`}
       </p>
     );
   }
   if (error) return <p className="text-sm text-hard">{error}</p>;
+  if (saveState === "signed-out") return <SaveNote state={saveState} signInHref={signInHref} />;
   if (!result) return <p className="text-sm text-muted">Run your code to see results here.</p>;
 
   const failed = result.cases.find((c) => c.verdict !== "Accepted");

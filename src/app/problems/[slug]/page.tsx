@@ -16,6 +16,7 @@ export default async function ProblemPage({ params }: PageProps<"/problems/[slug
   if (!problem) notFound();
   const submissions = user ? await getProblemSubmissions(user.id, problem.id) : [];
 
-  // Phase 2 still judges in the browser, so hidden tests are sent to the client. Phase 3 keeps them on the server.
-  return <Workspace problem={problem} signedIn={!!user} initialSubmissions={submissions} />;
+  // Only sample tests reach the browser (for Run). Submit is judged on the server with every test.
+  const publicProblem = { ...problem, tests: problem.tests.filter((t) => t.sample) };
+  return <Workspace problem={publicProblem} signedIn={!!user} initialSubmissions={submissions} />;
 }
