@@ -5,11 +5,14 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Problem } from "@/lib/problems";
 import { judge, runner, type JudgeResult, type RunnerStatus } from "@/lib/judge/runner";
-import { clearCode, recordSubmission } from "@/lib/progress";
+import { clearCode } from "@/lib/drafts";
+import type { SubmissionRow } from "@/lib/queries";
+import { saveSubmission } from "@/app/problems/[slug]/actions";
 import type { EditorInstance } from "./CodeEditor";
 import EditorPlaceholder from "./EditorPlaceholder";
 import Console, { type ConsoleTab } from "./Console";
 import Description from "./Description";
+import SubmissionsPanel from "./SubmissionsPanel";
 import { useSplit } from "./useSplit";
 
 const CodeEditor = dynamic(() => import("./CodeEditor"), { ssr: false, loading: EditorPlaceholder });
@@ -22,7 +25,15 @@ function useRunnerStatus(): RunnerStatus {
   );
 }
 
-export default function Workspace({ problem }: { problem: Problem }) {
+export type SaveState = "saving" | "saved" | "signed-out" | "error" | null;
+
+interface Props {
+  problem: Problem;
+  signedIn: boolean;
+  initialSubmissions: SubmissionRow[];
+}
+
+export default function Workspace({ problem, signedIn, initialSubmissions }: Props) {
   const editorRef = useRef<EditorInstance | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const colRef = useRef<HTMLDivElement>(null);
@@ -35,6 +46,11 @@ export default function Workspace({ problem }: { problem: Problem }) {
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<JudgeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [leftTab, setLeftTab] = useState<"description" | "submissions">("description");
+  const [submissions, setSubmissions] = useState(initialSubmissions);
+  const [saveState, setSaveState] = useState<SaveState>(null);
+  const solved = submissions.some((s) => s.verdict === "Accepted");
+  const signInHref = `/auth/sign-in?next=${encodeURIComponent(`/problems/${problem.slug}`)}`;
 
   // Start downloading Python as soon as the page opens, so the first Run is fast.
   useEffect(() => {
@@ -48,11 +64,12 @@ export default function Workspace({ problem }: { problem: Problem }) {
     setTab("result");
     setError(null);
     setResult(null);
+    setSaveState(null);
     setProgress({ done: 0, total: 0 });
     try {
       const r = await judge(problem, code, mode, (done, total) => setProgress({ done, total }));
       setResult(r);
-      if (mode === "submit") recordSubmission(problem.slug, r.verdict === "Accepted");
+      if (mode === "submit") void save(code, r);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -61,11 +78,44 @@ export default function Workspace({ problem }: { problem: Problem }) {
     }
   }
 
+  async function save(code: string, r: JudgeResult) {
+    if (!signedIn) {
+      setSaveState("signed-out");
+      return;
+    }
+    setSaveState("saving");
+    const failed = r.cases.find((c) => c.verdict !== "Accepted");
+    try {
+      const res = await saveSubmission({
+        slug: problem.slug,
+        code,
+        verdict: r.verdict,
+        passed: r.passed,
+        total: r.total,
+        runtimeMs: r.timeMs,
+        failedTest: failed ? failed.index : null,
+      });
+      if (res.ok) {
+        setSubmissions((prev) => [res.submission, ...prev]);
+        setSaveState("saved");
+      } else {
+        setSaveState(res.reason === "signed-out" ? "signed-out" : "error");
+      }
+    } catch {
+      setSaveState("error");
+    }
+  }
+
   // Keyboard shortcuts call the latest execute() through a ref, since Monaco registers them once.
   const executeRef = useRef(execute);
   useEffect(() => {
     executeRef.current = execute;
   });
+
+  function loadCode(code: string) {
+    if (!confirm("Replace the code in the editor with this submission?")) return;
+    editorRef.current?.setValue(code);
+  }
 
   function resetCode() {
     if (!confirm("Reset to the starter code? Your current code will be lost.")) return;
@@ -87,12 +137,34 @@ export default function Workspace({ problem }: { problem: Problem }) {
       className="flex min-h-0 flex-1 flex-col gap-2 p-2 lg:grid lg:h-[calc(100dvh-3.5rem)] lg:grid-cols-[var(--left)_6px_minmax(0,1fr)] lg:gap-0"
     >
       <section className="min-h-0 overflow-auto rounded-lg border border-line bg-surface">
-        <div className="sticky top-0 z-10 flex items-center border-b border-line bg-surface px-3 py-2 text-sm">
-          <Link href="/problems" className="text-muted hover:text-fg">
-            ← Problems
+        <div className="sticky top-0 z-10 flex items-center gap-1 border-b border-line bg-surface px-2 text-sm">
+          <Link href="/problems" className="px-2 py-2 text-muted hover:text-fg" aria-label="Back to problems">
+            ←
           </Link>
+          {(["description", "submissions"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setLeftTab(t)}
+              aria-pressed={leftTab === t}
+              className={`border-b-2 px-3 py-2 transition-colors ${
+                leftTab === t ? "border-accent-fill text-fg" : "border-transparent text-muted hover:text-fg"
+              }`}
+            >
+              {t === "description" ? "Description" : `Submissions${submissions.length ? ` (${submissions.length})` : ""}`}
+            </button>
+          ))}
+          {solved && <span className="ml-auto pr-2 text-xs font-medium text-easy">Solved ✓</span>}
         </div>
-        <Description problem={problem} />
+        {leftTab === "description" ? (
+          <Description problem={problem} />
+        ) : (
+          <SubmissionsPanel
+            submissions={submissions}
+            signedIn={signedIn}
+            signInHref={signInHref}
+            onLoadCode={loadCode}
+          />
+        )}
       </section>
 
       <div {...leftHandle} className="hidden cursor-col-resize items-center justify-center lg:flex">
@@ -146,6 +218,8 @@ export default function Workspace({ problem }: { problem: Problem }) {
               result={result}
               progress={progress}
               error={error}
+              saveState={saveState}
+              signInHref={signInHref}
             />
           </div>
           <div className="flex shrink-0 items-center justify-end gap-2 border-t border-line px-3 py-2">
@@ -160,7 +234,7 @@ export default function Workspace({ problem }: { problem: Problem }) {
             <button
               onClick={() => execute("submit")}
               disabled={busy}
-              className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-black transition-colors hover:bg-accent-strong disabled:opacity-50"
+              className="rounded-md bg-accent-fill px-4 py-1.5 text-sm font-medium text-black transition-colors hover:bg-accent-strong disabled:opacity-50"
             >
               Submit
             </button>

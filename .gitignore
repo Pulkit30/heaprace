@@ -46,3 +46,4 @@ next-env.d.ts
 .vscode/
 .idea/
 .claude/settings.local.json
+.neon

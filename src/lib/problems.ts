@@ -1,5 +1,5 @@
-// Phase 1: problems live in this file. Phase 2 moves them into PostgreSQL.
-// Keep this file free of runtime imports so scripts/verify-problems.ts can load it directly with Node.
+// Source of truth for problem content. `npm run db:seed` loads it into the database, which the app reads from.
+// Keep this file free of runtime imports so the scripts can load it directly with Node.
 
 export type Difficulty = "Easy" | "Medium" | "Hard";
 
@@ -349,9 +349,3 @@ Return how many units of rain water are trapped between the bars after it rains.
     ],
   },
 ];
-
-export function getProblem(slug: string): Problem | undefined {
-  return problems.find((p) => p.slug === slug);
-}
-
-export const allTags = Array.from(new Set(problems.flatMap((p) => p.tags))).sort();

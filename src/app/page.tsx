@@ -1,13 +1,15 @@
 import Link from "next/link";
-import { problems } from "@/lib/problems";
+import { listProblems } from "@/lib/queries";
 
 const features = [
   { title: "Run Python instantly", body: "Your code runs right in the browser. No setup, no waiting in a queue." },
   { title: "Real verdicts", body: "Accepted, Wrong Answer, Runtime Error or Time Limit Exceeded, with the failing input shown." },
+  { title: "Track your progress", body: "Sign in to save every submission and see what you've solved." },
   { title: "Race mode (soon)", body: "Go head to head with friends on the same problem. First correct submission wins." },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const problems = await listProblems();
   const counts = {
     Easy: problems.filter((p) => p.difficulty === "Easy").length,
     Medium: problems.filter((p) => p.difficulty === "Medium").length,
@@ -29,7 +31,7 @@ export default function Home() {
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <Link
             href="/problems"
-            className="rounded-md bg-accent px-5 py-2.5 font-medium text-black transition-colors hover:bg-accent-strong"
+            className="rounded-md bg-accent-fill px-5 py-2.5 font-medium text-black transition-colors hover:bg-accent-strong"
           >
             Start solving
           </Link>
@@ -42,7 +44,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mt-20 grid gap-4 sm:grid-cols-3">
+      <section className="mt-20 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {features.map((f) => (
           <div key={f.title} className="rounded-lg border border-line bg-surface p-5">
             <h2 className="font-medium">{f.title}</h2>

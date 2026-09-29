@@ -2,16 +2,20 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { Difficulty, Problem } from "@/lib/problems";
-import { useProgress } from "@/lib/progress";
+import type { Difficulty } from "@/lib/problems";
+import type { ProblemStatus, ProblemSummary } from "@/lib/queries";
 import DifficultyBadge from "./DifficultyBadge";
-
-export type ProblemSummary = Pick<Problem, "id" | "slug" | "title" | "difficulty" | "tags">;
 
 const difficulties: (Difficulty | "All")[] = ["All", "Easy", "Medium", "Hard"];
 
-export default function ProblemTable({ problems, tags }: { problems: ProblemSummary[]; tags: string[] }) {
-  const progress = useProgress();
+interface Props {
+  problems: ProblemSummary[];
+  tags: string[];
+  statuses: Record<string, ProblemStatus>;
+  showProgress: boolean;
+}
+
+export default function ProblemTable({ problems, tags, statuses: progress, showProgress }: Props) {
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState<Difficulty | "All">("All");
   const [tag, setTag] = useState("All");
@@ -26,7 +30,7 @@ export default function ProblemTable({ problems, tags }: { problems: ProblemSumm
   const solved = problems.filter((p) => progress[p.slug] === "solved").length;
 
   const selectClass =
-    "rounded-md border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent";
+    "rounded-md border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent-fill";
 
   return (
     <>
@@ -56,9 +60,11 @@ export default function ProblemTable({ problems, tags }: { problems: ProblemSumm
             <option key={t}>{t}</option>
           ))}
         </select>
-        <span className="text-sm text-muted">
-          <span className="font-medium text-fg">{solved}</span>/{problems.length} solved
-        </span>
+        {showProgress && (
+          <span className="text-sm text-muted">
+            <span className="font-medium text-fg">{solved}</span>/{problems.length} solved
+          </span>
+        )}
       </div>
 
       <div className="mt-4 overflow-hidden rounded-lg border border-line">

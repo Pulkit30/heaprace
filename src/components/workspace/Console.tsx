@@ -3,7 +3,10 @@
 import { useState } from "react";
 import type { Problem, TestCase } from "@/lib/problems";
 import { formatValue } from "@/lib/judge/compare";
-import type { CaseResult, JudgeResult, Verdict } from "@/lib/judge/runner";
+import Link from "next/link";
+import type { CaseResult, JudgeResult } from "@/lib/judge/runner";
+import { verdictColor } from "../VerdictText";
+import type { SaveState } from "./Workspace";
 
 export type ConsoleTab = "testcases" | "result";
 
@@ -15,16 +18,11 @@ interface Props {
   /** Set while judging: how many tests have finished. */
   progress: { done: number; total: number } | null;
   error: string | null;
+  saveState: SaveState;
+  signInHref: string;
 }
 
-const verdictColor: Record<Verdict, string> = {
-  Accepted: "text-easy",
-  "Wrong Answer": "text-hard",
-  "Runtime Error": "text-hard",
-  "Time Limit Exceeded": "text-medium",
-};
-
-export default function Console({ problem, tab, onTabChange, result, progress, error }: Props) {
+export default function Console({ problem, tab, onTabChange, result, progress, error, saveState, signInHref }: Props) {
   const samples = problem.tests.filter((t) => t.sample);
 
   return (
@@ -37,7 +35,7 @@ export default function Console({ problem, tab, onTabChange, result, progress, e
             aria-selected={tab === t}
             onClick={() => onTabChange(t)}
             className={`border-b-2 px-3 py-2 text-sm transition-colors ${
-              tab === t ? "border-accent text-fg" : "border-transparent text-muted hover:text-fg"
+              tab === t ? "border-accent-fill text-fg" : "border-transparent text-muted hover:text-fg"
             }`}
           >
             {t === "testcases" ? "Test cases" : "Result"}
@@ -52,14 +50,38 @@ export default function Console({ problem, tab, onTabChange, result, progress, e
             render={(i) => <CaseDetails problem={problem} test={samples[i]} />}
           />
         ) : (
-          <ResultView problem={problem} result={result} progress={progress} error={error} />
+          <ResultView
+            problem={problem}
+            result={result}
+            progress={progress}
+            error={error}
+            saveState={saveState}
+            signInHref={signInHref}
+          />
         )}
       </div>
     </div>
   );
 }
 
-function ResultView({ problem, result, progress, error }: Omit<Props, "tab" | "onTabChange">) {
+function SaveNote({ state, signInHref }: { state: SaveState; signInHref: string }) {
+  if (state === "saving") return <p className="mb-3 text-xs text-muted">Saving submission…</p>;
+  if (state === "saved") return <p className="mb-3 text-xs text-muted">Saved to your submissions.</p>;
+  if (state === "error") return <p className="mb-3 text-xs text-hard">Couldn&apos;t save this submission. Try submitting again.</p>;
+  if (state === "signed-out")
+    return (
+      <p className="mb-3 text-xs text-muted">
+        Not saved.{" "}
+        <Link href={signInHref} className="text-accent hover:underline">
+          Sign in
+        </Link>{" "}
+        to keep your submissions and progress.
+      </p>
+    );
+  return null;
+}
+
+function ResultView({ problem, result, progress, error, saveState, signInHref }: Omit<Props, "tab" | "onTabChange">) {
   if (progress) {
     return (
       <p className="text-sm text-muted">
@@ -83,6 +105,8 @@ function ResultView({ problem, result, progress, error }: Omit<Props, "tab" | "o
         </span>
       </div>
 
+      {result.mode === "submit" && <SaveNote state={saveState} signInHref={signInHref} />}
+
       {result.mode === "run" ? (
         <CasePicker
           key={`${result.mode}-${result.timeMs}`}
@@ -99,7 +123,7 @@ function ResultView({ problem, result, progress, error }: Omit<Props, "tab" | "o
           <CaseResultDetails problem={problem} c={failed} />
         </>
       ) : (
-        <p className="text-sm text-muted">Your solution passed every test. It&apos;s marked solved in the problem list.</p>
+        <p className="text-sm text-muted">Your solution passed every test.</p>
       )}
     </div>
   );

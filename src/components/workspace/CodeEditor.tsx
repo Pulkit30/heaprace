@@ -2,7 +2,8 @@
 
 import Editor, { type BeforeMount, type OnMount } from "@monaco-editor/react";
 import { useRef, useState } from "react";
-import { loadCode, saveCode } from "@/lib/progress";
+import { loadCode, saveCode } from "@/lib/drafts";
+import { useTheme } from "@/lib/theme";
 import EditorPlaceholder from "./EditorPlaceholder";
 
 export type EditorInstance = Parameters<OnMount>[0];
@@ -13,8 +14,21 @@ interface Props {
   onMount: (editor: EditorInstance, monaco: Parameters<OnMount>[1]) => void;
 }
 
-const defineTheme: BeforeMount = (monaco) => {
-  monaco.editor.defineTheme("heaprace", {
+// Editor colors mirror the --surface tokens in globals.css.
+const defineThemes: BeforeMount = (monaco) => {
+  monaco.editor.defineTheme("heaprace-light", {
+    base: "vs",
+    inherit: true,
+    rules: [],
+    colors: {
+      "editor.background": "#ffffff",
+      "editor.lineHighlightBackground": "#f7f8fa",
+      "editor.lineHighlightBorder": "#00000000",
+      "editorLineNumber.foreground": "#b4b9c2",
+      "editorLineNumber.activeForeground": "#6b7280",
+    },
+  });
+  monaco.editor.defineTheme("heaprace-dark", {
     base: "vs-dark",
     inherit: true,
     rules: [],
@@ -31,13 +45,14 @@ const defineTheme: BeforeMount = (monaco) => {
 export default function CodeEditor({ slug, starterCode, onMount }: Props) {
   const [initialCode] = useState(() => loadCode(slug) ?? starterCode);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const theme = useTheme();
 
   return (
     <Editor
       language="python"
-      theme="heaprace"
+      theme={`heaprace-${theme}`}
       defaultValue={initialCode}
-      beforeMount={defineTheme}
+      beforeMount={defineThemes}
       onMount={onMount}
       onChange={(value) => {
         clearTimeout(saveTimer.current);
