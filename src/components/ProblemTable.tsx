@@ -1,0 +1,125 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import type { Difficulty, Problem } from "@/lib/problems";
+import { useProgress } from "@/lib/progress";
+import DifficultyBadge from "./DifficultyBadge";
+
+export type ProblemSummary = Pick<Problem, "id" | "slug" | "title" | "difficulty" | "tags">;
+
+const difficulties: (Difficulty | "All")[] = ["All", "Easy", "Medium", "Hard"];
+
+export default function ProblemTable({ problems, tags }: { problems: ProblemSummary[]; tags: string[] }) {
+  const progress = useProgress();
+  const [query, setQuery] = useState("");
+  const [difficulty, setDifficulty] = useState<Difficulty | "All">("All");
+  const [tag, setTag] = useState("All");
+
+  const q = query.trim().toLowerCase();
+  const visible = problems.filter(
+    (p) =>
+      (difficulty === "All" || p.difficulty === difficulty) &&
+      (tag === "All" || p.tags.includes(tag)) &&
+      (!q || p.title.toLowerCase().includes(q) || String(p.id) === q),
+  );
+  const solved = problems.filter((p) => progress[p.slug] === "solved").length;
+
+  const selectClass =
+    "rounded-md border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent";
+
+  return (
+    <>
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search problems"
+          aria-label="Search problems"
+          className={`${selectClass} min-w-0 flex-1 basis-56 placeholder:text-muted`}
+        />
+        <select
+          value={difficulty}
+          onChange={(e) => setDifficulty(e.target.value as Difficulty | "All")}
+          aria-label="Difficulty"
+          className={selectClass}
+        >
+          {difficulties.map((d) => (
+            <option key={d} value={d}>
+              {d === "All" ? "All difficulties" : d}
+            </option>
+          ))}
+        </select>
+        <select value={tag} onChange={(e) => setTag(e.target.value)} aria-label="Tag" className={selectClass}>
+          <option value="All">All topics</option>
+          {tags.map((t) => (
+            <option key={t}>{t}</option>
+          ))}
+        </select>
+        <span className="text-sm text-muted">
+          <span className="font-medium text-fg">{solved}</span>/{problems.length} solved
+        </span>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-lg border border-line">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-surface text-xs uppercase tracking-wide text-muted">
+            <tr>
+              <th className="w-12 px-4 py-3 font-medium">
+                <span className="sr-only">Status</span>
+              </th>
+              <th className="px-4 py-3 font-medium">Title</th>
+              <th className="w-28 px-4 py-3 font-medium">Difficulty</th>
+              <th className="hidden px-4 py-3 font-medium md:table-cell">Topics</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visible.map((p) => {
+              const status = progress[p.slug];
+              return (
+                <tr key={p.slug} className="border-t border-line transition-colors hover:bg-surface">
+                  <td className="px-4 py-3">
+                    {status === "solved" && (
+                      <span className="text-easy" title="Solved">
+                        ✓
+                      </span>
+                    )}
+                    {status === "attempted" && (
+                      <span className="text-medium" title="Attempted">
+                        ◐
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Link href={`/problems/${p.slug}`} className="hover:text-accent">
+                      {p.id}. {p.title}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3">
+                    <DifficultyBadge difficulty={p.difficulty} />
+                  </td>
+                  <td className="hidden px-4 py-3 md:table-cell">
+                    <div className="flex flex-wrap gap-1.5">
+                      {p.tags.map((t) => (
+                        <span key={t} className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-muted">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {visible.length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-4 py-10 text-center text-muted">
+                  No problems match those filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
