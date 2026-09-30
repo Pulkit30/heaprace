@@ -66,6 +66,7 @@ export default function RaceRoom({ initial }: { initial: RaceState }) {
           signedIn
           initialSubmissions={[]}
           draftKey={`race:${state.code}`}
+          tutor={false}
           heightClass="lg:h-[calc(100dvh-6rem)]"
           submit={async (code) => {
             const res = await submitRaceSolution(state.code, code);

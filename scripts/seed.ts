@@ -5,6 +5,8 @@ import { Pool } from "@neondatabase/serverless";
 import { eq, notInArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { problems as problemData } from "../src/lib/problems.ts";
+import { patterns } from "../src/lib/roadmap.ts";
+import { errorGuides, patternNotes, problemGuides } from "../src/lib/tutor/knowledge.ts";
 import * as schema from "../src/db/schema.ts";
 
 process.loadEnvFile(".env.local");
@@ -46,6 +48,41 @@ try {
       );
       console.log(`✓ ${p.id}. ${p.title} (${tests.length} tests)`);
     }
+
+    // Tutor knowledge base: rebuilt from scratch each time (it's derived data, nothing references it).
+    type Chunk = typeof schema.kbChunks.$inferInsert;
+    const titleOf = new Map(problemData.map((p) => [p.slug, p.title]));
+    const patternOf = new Map(patterns.flatMap((pat) => pat.problems.map((slug) => [slug, pat.id] as const)));
+    const chunks: Chunk[] = [];
+    for (const g of problemGuides) {
+      const base = { problemSlug: g.slug, patternId: patternOf.get(g.slug) ?? null };
+      const title = titleOf.get(g.slug) ?? g.slug;
+      g.hints.forEach((body, i) => chunks.push({ ...base, kind: "hint", level: i + 1, title: `${title}: hint ${i + 1}`, body }));
+      chunks.push({ ...base, kind: "insight", title: `${title}: key idea`, body: g.insight });
+      chunks.push({
+        ...base,
+        kind: "complexity",
+        title: `${title}: target complexity`,
+        body: `Aim for ${g.complexity.time} time and ${g.complexity.space} space.${g.complexity.note ? ` ${g.complexity.note}` : ""}`,
+      });
+      g.pitfalls.forEach((body) => chunks.push({ ...base, kind: "pitfall", title: `${title}: common mistake`, body }));
+    }
+    for (const pat of patterns) {
+      const note = patternNotes.find((n) => n.patternId === pat.id);
+      chunks.push({
+        kind: "pattern",
+        patternId: pat.id,
+        title: pat.name,
+        body: [pat.summary, `Use it when: ${pat.useWhen}`, note?.howTo, note && `Watch out for: ${note.pitfalls}`]
+          .filter(Boolean)
+          .join(" "),
+      });
+    }
+    for (const e of errorGuides) chunks.push({ kind: "error", patternId: e.id, title: e.title, body: e.body });
+
+    await tx.delete(schema.kbChunks);
+    await tx.insert(schema.kbChunks).values(chunks);
+    console.log(`✓ tutor knowledge base (${chunks.length} chunks)`);
   });
 
   // Problems removed from problems.ts are reported, not deleted, since deleting would also delete submissions.

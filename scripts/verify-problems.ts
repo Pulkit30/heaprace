@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { problems } from "../src/lib/problems.ts";
 import { isCorrect, formatValue } from "../src/lib/judge/compare.ts";
 import { patterns } from "../src/lib/roadmap.ts";
+import { errorGuides, patternNotes, problemGuides } from "../src/lib/tutor/knowledge.ts";
 
 const refScript = fileURLToPath(new URL("./reference_solutions.py", import.meta.url));
 const input = JSON.stringify(problems.map(({ slug, functionName, tests, argTypes, returnType }) => ({ slug, functionName, tests, argTypes, returnType })));
@@ -65,6 +66,26 @@ if (roadmapErrors.length) {
   console.log(`✗ roadmap\n  ${roadmapErrors.join("\n  ")}`);
 } else {
   console.log(`✓ roadmap (${patterns.length} patterns, ${placed.size}/${problems.length} problems placed)`);
+}
+
+const kbErrors: string[] = [];
+const guideSlugs = new Set(problemGuides.map((g) => g.slug));
+for (const p of problems) if (!guideSlugs.has(p.slug)) kbErrors.push(`${p.slug}: no tutor guide (hints) in knowledge.ts`);
+for (const g of problemGuides) {
+  if (!slugs.has(g.slug)) kbErrors.push(`${g.slug}: guide for an unknown problem`);
+  if (g.hints.some((h) => h.trim().length < 20)) kbErrors.push(`${g.slug}: a hint is too short`);
+  // The tutor must never hand out solutions: guides are prose only.
+  if ([...g.hints, g.insight, ...g.pitfalls].some((t) => /\bdef |\breturn |class Solution|\n\s{4}/.test(t))) {
+    kbErrors.push(`${g.slug}: guide text looks like code`);
+  }
+}
+for (const pat of patterns) if (!patternNotes.some((n) => n.patternId === pat.id)) kbErrors.push(`${pat.id}: no pattern note`);
+if (new Set(errorGuides.map((e) => e.id)).size !== errorGuides.length) kbErrors.push("duplicate error guide id");
+if (kbErrors.length) {
+  failures += kbErrors.length;
+  console.log(`✗ tutor knowledge\n  ${kbErrors.join("\n  ")}`);
+} else {
+  console.log(`✓ tutor knowledge (${problemGuides.length} problem guides, ${patternNotes.length} pattern notes, ${errorGuides.length} error guides)`);
 }
 
 if (failures) {

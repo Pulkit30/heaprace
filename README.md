@@ -42,6 +42,7 @@ Open http://localhost:3000.
 | `submissions` | User, problem, code, verdict, tests passed, runtime, time, and the race it belonged to (if any) |
 | `race_rooms` | Race code, host, secret problem, difficulty, length, status, start and end time |
 | `race_participants` | Who joined each race, their attempts, and when they solved it |
+| `kb_chunks` | The AI tutor's knowledge base: hints, key ideas, complexity targets, mistakes, pattern notes, error guides, with a full-text search index |
 | `neon_auth.*` | Users and sessions, managed by Neon Auth |
 
 Code drafts are kept in the browser (localStorage), like LeetCode.
@@ -74,8 +75,29 @@ Self-hosting Judge0 on an Ubuntu server with Docker, following the official [dep
 - **Phase 2** (done): Neon Postgres, sign in (email or Google), saved submissions, light/dark theme
 - **Phase 3** (done): server-side judge for Submit (Judge0, or local Python in development); hidden tests stay on the server
 - **Phase 4** (done): Race mode (rooms up to 8 players, countdown, live standings, results) and public profiles
-- **Extras**: streaks and activity calendar, a 28-pattern roadmap (`src/lib/roadmap.ts`)
+- **Extras**: streaks and activity calendar, a 28-pattern roadmap (`src/lib/roadmap.ts`), and the AI Tutor with RAG, agent and MCP
 - **Phase 5**: launch on Vercel with a domain, own Google OAuth keys and SMTP, self-hosted Judge0
+
+## AI Tutor (RAG + agent + MCP, no paid LLM)
+
+Every problem page has an **✨ AI Tutor** tab (disabled in races). It never writes solutions; the knowledge base contains no code, and `npm run verify:problems` fails if code sneaks in.
+
+- **RAG:** `src/lib/tutor/knowledge.ts` (3 progressive hints, key idea, complexity target and common mistakes per problem, plus pattern notes and Python error guides) is loaded into `kb_chunks` by `npm run db:seed` and retrieved with Postgres full-text search (weighted `tsvector` + GIN index, OR-ranked with `ts_rank_cd`).
+- **Agent:** `src/lib/tutor/engine.ts` classifies the question, plans which tools to call (inspect the latest Run/Submit result, explain an error, retrieve notes, reveal the next hint, look up the pattern), runs them and composes a grounded reply. The UI shows each step and the sources. It runs without an LLM, so it costs nothing.
+- **Tools:** `src/lib/tutor/tools.ts`, shared by the in-app agent and the MCP server.
+- **MCP server:** `https://heaprace.vercel.app/api/mcp` (Streamable HTTP, stateless, read-only). Tools: `list_problems`, `get_problem`, `get_hint`, `search_knowledge`, `explain_error`, `list_patterns`, `get_pattern`, with server instructions to tutor rather than solve.
+
+Connect an AI assistant:
+
+```jsonc
+// Cursor: .cursor/mcp.json   (VS Code: .vscode/mcp.json with "servers" and "type": "http")
+{ "mcpServers": { "heaprace": { "url": "https://heaprace.vercel.app/api/mcp" } } }
+
+// Claude Desktop: claude_desktop_config.json (bridges the remote server over stdio)
+{ "mcpServers": { "heaprace": { "command": "npx", "args": ["-y", "mcp-remote", "https://heaprace.vercel.app/api/mcp"] } } }
+```
+
+Try it with the MCP Inspector: `npx @modelcontextprotocol/inspector`, then connect to the URL above.
 
 ## Race mode
 

@@ -1,8 +1,10 @@
 // Database schema. Change it here, then run `npm run db:generate` and `npm run db:migrate`.
 // Users live in the `neon_auth` schema, which Neon Auth manages; user_id columns hold neon_auth.user.id.
 // Keep this file free of extensionless relative imports so scripts can load it directly with Node.
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -123,4 +125,34 @@ export const raceParticipants = pgTable(
     attempts: integer("attempts").notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.roomId, t.userId] }), index("race_participants_user_idx").on(t.userId)],
+);
+
+/** Postgres full-text search vector. */
+const tsvector = customType<{ data: string }>({ dataType: () => "tsvector" });
+
+/**
+ * The tutor's knowledge base (RAG): hints, key ideas, complexity targets, pitfalls, pattern notes and
+ * error guides, loaded from src/lib/tutor/knowledge.ts by `npm run db:seed`. Searched with full-text search.
+ */
+export const kbChunks = pgTable(
+  "kb_chunks",
+  {
+    id: serial("id").primaryKey(),
+    /** hint | insight | complexity | pitfall | pattern | error */
+    kind: text("kind").notNull(),
+    problemSlug: text("problem_slug"),
+    patternId: text("pattern_id"),
+    /** Hint order (1–3) for kind = "hint". */
+    level: integer("level"),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    /** Title weighted above body, kept in sync by Postgres. */
+    searchVector: tsvector("search_vector").generatedAlwaysAs(
+      sql`setweight(to_tsvector('english', coalesce(title, '')), 'A') || setweight(to_tsvector('english', coalesce(body, '')), 'B')`,
+    ),
+  },
+  (t) => [
+    index("kb_chunks_search_idx").using("gin", t.searchVector),
+    index("kb_chunks_problem_idx").on(t.problemSlug, t.kind, t.level),
+  ],
 );
