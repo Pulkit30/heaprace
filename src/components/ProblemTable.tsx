@@ -8,25 +8,42 @@ import DifficultyBadge from "./DifficultyBadge";
 
 const difficulties: (Difficulty | "All")[] = ["All", "Easy", "Medium", "Hard"];
 
+const PAGE_SIZE = 50;
+
 interface Props {
   problems: ProblemSummary[];
   tags: string[];
+  /** Roadmap patterns in learning order, for the pattern filter. */
+  patterns: { id: string; name: string }[];
   statuses: Record<string, ProblemStatus>;
   showProgress: boolean;
 }
 
-export default function ProblemTable({ problems, tags, statuses: progress, showProgress }: Props) {
+export default function ProblemTable({ problems, tags, patterns, statuses: progress, showProgress }: Props) {
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState<Difficulty | "All">("All");
   const [tag, setTag] = useState("All");
+  const [pattern, setPattern] = useState("All");
+  const [page, setPage] = useState(0);
 
   const q = query.trim().toLowerCase();
-  const visible = problems.filter(
+  const matching = problems.filter(
     (p) =>
       (difficulty === "All" || p.difficulty === difficulty) &&
       (tag === "All" || p.tags.includes(tag)) &&
+      (pattern === "All" || p.pattern === pattern) &&
       (!q || p.title.toLowerCase().includes(q) || String(p.id) === q),
   );
+  const pages = Math.max(1, Math.ceil(matching.length / PAGE_SIZE));
+  const current = Math.min(page, pages - 1);
+  const visible = matching.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE);
+  // Any filter change starts again from the first page.
+  const filter =
+    <T,>(set: (v: T) => void) =>
+    (v: T) => {
+      set(v);
+      setPage(0);
+    };
   const solved = problems.filter((p) => progress[p.slug] === "solved").length;
 
   const selectClass =
@@ -34,17 +51,17 @@ export default function ProblemTable({ problems, tags, statuses: progress, showP
 
   return (
     <>
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => filter(setQuery)(e.target.value)}
           placeholder="Search problems"
           aria-label="Search problems"
           className={`${selectClass} min-w-0 flex-1 basis-56 placeholder:text-muted`}
         />
         <select
           value={difficulty}
-          onChange={(e) => setDifficulty(e.target.value as Difficulty | "All")}
+          onChange={(e) => filter(setDifficulty)(e.target.value as Difficulty | "All")}
           aria-label="Difficulty"
           className={selectClass}
         >
@@ -54,7 +71,15 @@ export default function ProblemTable({ problems, tags, statuses: progress, showP
             </option>
           ))}
         </select>
-        <select value={tag} onChange={(e) => setTag(e.target.value)} aria-label="Tag" className={selectClass}>
+        <select value={pattern} onChange={(e) => filter(setPattern)(e.target.value)} aria-label="Pattern" className={selectClass}>
+          <option value="All">All patterns</option>
+          {patterns.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        <select value={tag} onChange={(e) => filter(setTag)(e.target.value)} aria-label="Tag" className={selectClass}>
           <option value="All">All topics</option>
           {tags.map((t) => (
             <option key={t}>{t}</option>
@@ -126,6 +151,29 @@ export default function ProblemTable({ problems, tags, statuses: progress, showP
           </tbody>
         </table>
       </div>
+      {pages > 1 && (
+        <div className="mt-4 flex items-center justify-between text-sm text-muted">
+          <span>
+            {current * PAGE_SIZE + 1}–{Math.min((current + 1) * PAGE_SIZE, matching.length)} of {matching.length}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(current - 1)}
+              disabled={current === 0}
+              className="rounded-md border border-line px-3 py-1.5 transition-colors hover:bg-surface-2 disabled:opacity-40"
+            >
+              ← Previous
+            </button>
+            <button
+              onClick={() => setPage(current + 1)}
+              disabled={current >= pages - 1}
+              className="rounded-md border border-line px-3 py-1.5 transition-colors hover:bg-surface-2 disabled:opacity-40"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

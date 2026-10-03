@@ -20,13 +20,16 @@ export default function RoadmapView({ problems, statuses, signedIn }: Props) {
   const close = useCallback(() => setSelectedId(null), []);
 
   const patternsById = useMemo(() => new Map(patterns.map((p) => [p.id, p])), []);
-  const problemsBySlug = useMemo(() => new Map(problems.map((p) => [p.slug, p])), [problems]);
+  const problemsByPattern = useMemo(() => {
+    const map = new Map<string, ProblemSummary[]>();
+    for (const p of problems) map.set(p.pattern, [...(map.get(p.pattern) ?? []), p]);
+    return map;
+  }, [problems]);
   const childrenOf = useCallback((id: string) => patterns.filter((p) => p.parents.includes(id)), []);
 
   const progress = (p: Pattern) => {
-    const total = p.problems.filter((slug) => problemsBySlug.has(slug)).length;
-    const solved = p.problems.filter((slug) => statuses[slug] === "solved").length;
-    return { solved, total };
+    const list = problemsByPattern.get(p.id) ?? [];
+    return { solved: list.filter((q) => statuses[q.slug] === "solved").length, total: list.length };
   };
 
   const selected = selectedId ? (patternsById.get(selectedId) ?? null) : null;
@@ -119,7 +122,7 @@ export default function RoadmapView({ problems, statuses, signedIn }: Props) {
         pattern={selected}
         patternsById={patternsById}
         childrenOf={childrenOf}
-        problemsBySlug={problemsBySlug}
+        problems={selected ? (problemsByPattern.get(selected.id) ?? []) : []}
         statuses={statuses}
         signedIn={signedIn}
         onSelect={setSelectedId}

@@ -7,7 +7,8 @@ export type Difficulty = "Easy" | "Medium" | "Hard";
 export type CompareMode =
   | "exact" // deep equality
   | "unordered" // top-level list order doesn't matter
-  | "unordered-deep"; // order doesn't matter at either level (list of lists)
+  | "unordered-deep" // order doesn't matter at either level (list of lists)
+  | "approx"; // deep equality, numbers within 1e-5 (decimal answers)
 
 export interface TestCase {
   /** Positional arguments passed to the solution method, as JSON values. */
@@ -17,8 +18,12 @@ export interface TestCase {
   sample?: boolean;
 }
 
-/** Data structures the judge builds from JSON: a list becomes a linked list, a level-order list becomes a tree. */
-export type NodeType = "ListNode" | "TreeNode";
+/**
+ * Data structures the judge converts. Arguments: a list becomes a linked list ("ListNode"), a level-order list
+ * becomes a tree ("TreeNode"), [values, pos] becomes a linked list whose tail links back to node pos ("CycleList").
+ * Returns: "ListNode"/"TreeNode" convert back to lists; "NodeIndex" reports a returned node's position in the input.
+ */
+export type NodeType = "ListNode" | "TreeNode" | "CycleList" | "NodeIndex" | "ListNodeArray" | "TreeNodeArray";
 
 export interface Example {
   input: string;
@@ -46,6 +51,15 @@ export interface Problem {
   argTypes?: (NodeType | null)[];
   /** Convert a returned node back to a list before comparing. */
   returnType?: NodeType;
+  /** In-place problems: judge this (modified) argument instead of the return value. */
+  outArg?: number;
+  /**
+   * Design problems: functionName is a class; each test's args are [operations, arguments] and the expected
+   * value lists every call's return (null for the constructor), LeetCode-style.
+   */
+  design?: boolean;
+  /** Roadmap pattern id (see roadmap.ts). */
+  pattern: string;
   tests: TestCase[];
 }
 
@@ -55,6 +69,7 @@ export const problems: Problem[] = [
     slug: "two-sum",
     title: "Two Sum",
     difficulty: "Easy",
+    pattern: "arrays-hashing",
     tags: ["Array", "Hash Table"],
     description: `Given an array of integers \`nums\` and an integer \`target\`, return the **indices** of the two numbers that add up to \`target\`.
 
@@ -86,6 +101,7 @@ Each input has exactly one valid answer, and you may not use the same element tw
     slug: "valid-parentheses",
     title: "Valid Parentheses",
     difficulty: "Easy",
+    pattern: "stack",
     tags: ["String", "Stack"],
     description: `Given a string \`s\` made only of the characters \`()[]{}\`, decide whether it is **valid**.
 
@@ -120,6 +136,7 @@ A string is valid when every opening bracket is closed by the same type of brack
     slug: "best-time-to-buy-and-sell-stock",
     title: "Best Time to Buy and Sell Stock",
     difficulty: "Easy",
+    pattern: "sliding-window",
     tags: ["Array", "Greedy"],
     description: `You are given \`prices\`, where \`prices[i]\` is a stock's price on day \`i\`.
 
@@ -151,6 +168,7 @@ Choose one day to buy and a **later** day to sell. Return the maximum profit you
     slug: "contains-duplicate",
     title: "Contains Duplicate",
     difficulty: "Easy",
+    pattern: "arrays-hashing",
     tags: ["Array", "Hash Table"],
     description: `Given an integer array \`nums\`, return \`True\` if any value appears **at least twice**, and \`False\` if every element is distinct.`,
     examples: [
@@ -179,6 +197,7 @@ Choose one day to buy and a **later** day to sell. Return the maximum profit you
     slug: "maximum-subarray",
     title: "Maximum Subarray",
     difficulty: "Medium",
+    pattern: "greedy",
     tags: ["Array", "Dynamic Programming"],
     description: `Given an integer array \`nums\`, find the contiguous, non-empty subarray with the largest sum and return **that sum**.`,
     examples: [
@@ -207,6 +226,7 @@ Choose one day to buy and a **later** day to sell. Return the maximum profit you
     slug: "longest-substring-without-repeating-characters",
     title: "Longest Substring Without Repeating Characters",
     difficulty: "Medium",
+    pattern: "sliding-window",
     tags: ["String", "Sliding Window", "Hash Table"],
     description: `Given a string \`s\`, return the length of the longest **substring** (contiguous) that contains no repeated characters.`,
     examples: [
@@ -238,6 +258,7 @@ Choose one day to buy and a **later** day to sell. Return the maximum profit you
     slug: "kth-largest-element-in-an-array",
     title: "Kth Largest Element in an Array",
     difficulty: "Medium",
+    pattern: "heap",
     tags: ["Array", "Heap", "Sorting"],
     description: `Given an integer array \`nums\` and an integer \`k\`, return the \`k\`th largest element.
 
@@ -270,6 +291,7 @@ class Solution:
     slug: "top-k-frequent-elements",
     title: "Top K Frequent Elements",
     difficulty: "Medium",
+    pattern: "heap",
     tags: ["Array", "Heap", "Hash Table"],
     description: `Given an integer array \`nums\` and an integer \`k\`, return the \`k\` most frequent elements. You may return them in any order.
 
@@ -299,6 +321,7 @@ The answer is guaranteed to be unique.`,
     slug: "merge-intervals",
     title: "Merge Intervals",
     difficulty: "Medium",
+    pattern: "intervals",
     tags: ["Array", "Sorting"],
     description: `Given a list of \`intervals\` where \`intervals[i] = [start, end]\`, merge every group of overlapping intervals and return the result sorted by start.
 
@@ -329,6 +352,7 @@ Intervals that only touch (like \`[1, 4]\` and \`[4, 5]\`) count as overlapping.
     slug: "trapping-rain-water",
     title: "Trapping Rain Water",
     difficulty: "Hard",
+    pattern: "two-pointers",
     tags: ["Array", "Two Pointers", "Stack"],
     description: `You are given \`height\`, a list of non-negative integers describing an elevation map where each bar has width 1.
 
@@ -360,6 +384,7 @@ Return how many units of rain water are trapped between the bars after it rains.
     slug: "subarray-sum-equals-k",
     title: "Subarray Sum Equals K",
     difficulty: "Medium",
+    pattern: "prefix-sum",
     tags: ["Array", "Prefix Sum", "Hash Table"],
     description: `Given an integer array \`nums\` and an integer \`k\`, return how many **contiguous subarrays** have a sum equal to \`k\`.
 
@@ -391,6 +416,7 @@ Numbers can be negative, so a sliding window won't work. Track running (prefix) 
     slug: "find-all-numbers-disappeared-in-an-array",
     title: "Find All Numbers Disappeared in an Array",
     difficulty: "Easy",
+    pattern: "cyclic-sort",
     tags: ["Array", "Cyclic Sort"],
     description: `You are given an array \`nums\` of \`n\` integers where each value is in the range \`1\` to \`n\`. Some values appear twice and others are missing.
 
@@ -421,6 +447,7 @@ Return every number in \`1..n\` that does not appear in \`nums\`, in any order. 
     slug: "spiral-matrix",
     title: "Spiral Matrix",
     difficulty: "Medium",
+    pattern: "matrix",
     tags: ["Array", "Matrix", "Simulation"],
     description: `Given an \`m x n\` matrix, return all of its elements in **spiral order**: start at the top-left, go right along the top row, down the right column, left along the bottom row, up the left column, then repeat on the inner layer.`,
     examples: [
@@ -449,6 +476,7 @@ Return every number in \`1..n\` that does not appear in \`nums\`, in any order. 
     slug: "search-in-rotated-sorted-array",
     title: "Search in Rotated Sorted Array",
     difficulty: "Medium",
+    pattern: "binary-search",
     tags: ["Array", "Binary Search"],
     description: `An array of **distinct** integers was sorted in ascending order and then rotated at some unknown pivot, so \`[0, 1, 2, 4, 5, 6, 7]\` might become \`[4, 5, 6, 7, 0, 1, 2]\`.
 
@@ -481,6 +509,7 @@ Given the rotated array \`nums\` and a \`target\`, return the index of \`target\
     slug: "reverse-linked-list",
     title: "Reverse Linked List",
     difficulty: "Easy",
+    pattern: "linked-list",
     tags: ["Linked List"],
     description: `Given the \`head\` of a singly linked list, reverse the list and return the new head.
 
@@ -518,6 +547,7 @@ class Solution:
     slug: "daily-temperatures",
     title: "Daily Temperatures",
     difficulty: "Medium",
+    pattern: "monotonic-stack",
     tags: ["Array", "Stack", "Monotonic Stack"],
     description: `Given daily \`temperatures\`, return a list \`answer\` where \`answer[i]\` is how many days you must wait after day \`i\` for a **warmer** temperature. If no warmer day comes, use \`0\`.`,
     examples: [
@@ -546,6 +576,7 @@ class Solution:
     slug: "find-the-duplicate-number",
     title: "Find the Duplicate Number",
     difficulty: "Medium",
+    pattern: "fast-slow-pointers",
     tags: ["Array", "Two Pointers", "Fast & Slow Pointers"],
     description: `\`nums\` has \`n + 1\` integers, each in the range \`1\` to \`n\`. Exactly one value is repeated (possibly more than twice). Return that value.
 
@@ -576,6 +607,7 @@ Don't modify \`nums\`, and use only O(1) extra space. Hint: treat each value as 
     slug: "maximum-depth-of-binary-tree",
     title: "Maximum Depth of Binary Tree",
     difficulty: "Easy",
+    pattern: "tree-dfs",
     tags: ["Tree", "Depth-First Search"],
     description: `Given the \`root\` of a binary tree, return its **maximum depth**: the number of nodes on the longest path from the root down to a leaf.
 
@@ -614,6 +646,7 @@ class Solution:
     slug: "binary-tree-level-order-traversal",
     title: "Binary Tree Level Order Traversal",
     difficulty: "Medium",
+    pattern: "tree-bfs",
     tags: ["Tree", "Breadth-First Search"],
     description: `Given the \`root\` of a binary tree, return its values **level by level**, left to right, as a list of lists.
 
@@ -651,6 +684,7 @@ class Solution:
     slug: "subsets",
     title: "Subsets",
     difficulty: "Medium",
+    pattern: "backtracking",
     tags: ["Array", "Backtracking"],
     description: `Given an array \`nums\` of **distinct** integers, return every possible subset (the power set), including the empty subset.
 
@@ -680,6 +714,7 @@ The result must not contain duplicate subsets. You can return the subsets, and t
     slug: "replace-words",
     title: "Replace Words",
     difficulty: "Medium",
+    pattern: "tries",
     tags: ["String", "Trie", "Hash Table"],
     description: `You are given a \`dictionary\` of word **roots** and a \`sentence\` of words separated by single spaces.
 
@@ -712,6 +747,7 @@ Replace every word that starts with a root by that root. If several roots match,
     slug: "number-of-islands",
     title: "Number of Islands",
     difficulty: "Medium",
+    pattern: "graphs",
     tags: ["Graph", "Breadth-First Search", "Depth-First Search", "Matrix"],
     description: `You are given an \`m x n\` grid of \`"1"\` (land) and \`"0"\` (water). Return the number of **islands**.
 
@@ -745,6 +781,7 @@ An island is a group of land cells connected horizontally or vertically (not dia
     slug: "climbing-stairs",
     title: "Climbing Stairs",
     difficulty: "Easy",
+    pattern: "dp-1d",
     tags: ["Dynamic Programming", "Math"],
     description: `A staircase has \`n\` steps. Each move you climb either **1 or 2** steps. In how many distinct ways can you reach the top?`,
     examples: [
@@ -773,6 +810,7 @@ An island is a group of land cells connected horizontally or vertically (not dia
     slug: "kth-smallest-element-in-a-sorted-matrix",
     title: "Kth Smallest Element in a Sorted Matrix",
     difficulty: "Medium",
+    pattern: "k-way-merge",
     tags: ["Matrix", "Heap", "K-way Merge"],
     description: `Every row and every column of the \`n x n\` \`matrix\` is sorted in ascending order. Return the \`k\`th smallest element overall (counting duplicates).
 
@@ -804,6 +842,7 @@ class Solution:
     slug: "ipo",
     title: "IPO",
     difficulty: "Hard",
+    pattern: "two-heaps",
     tags: ["Array", "Greedy", "Heap", "Two Heaps"],
     description: `You start with capital \`w\` and may complete at most \`k\` projects. Project \`i\` needs at least \`capital[i]\` to start and adds \`profits[i]\` to your capital when finished.
 
@@ -841,6 +880,7 @@ class Solution:
     slug: "single-number",
     title: "Single Number",
     difficulty: "Easy",
+    pattern: "bit-manipulation",
     tags: ["Array", "Bit Manipulation"],
     description: `Every element of \`nums\` appears **twice** except for one, which appears once. Return that one.
 
@@ -870,6 +910,7 @@ Aim for O(n) time and O(1) extra space. Think about what \`x ^ x\` equals.`,
     slug: "longest-common-subsequence",
     title: "Longest Common Subsequence",
     difficulty: "Medium",
+    pattern: "dp-2d",
     tags: ["String", "Dynamic Programming"],
     description: `Given two strings \`text1\` and \`text2\`, return the length of their longest **common subsequence**, or \`0\` if there is none.
 
@@ -900,6 +941,7 @@ A subsequence keeps the original order but may skip characters: \`"ace"\` is a s
     slug: "redundant-connection",
     title: "Redundant Connection",
     difficulty: "Medium",
+    pattern: "union-find",
     tags: ["Graph", "Union Find"],
     description: `A tree with \`n\` nodes (labelled \`1\` to \`n\`) had one extra edge added, creating exactly one cycle. The edges are given in \`edges\`, where \`edges[i] = [a, b]\`.
 
@@ -929,6 +971,7 @@ Return an edge you can remove so the graph becomes a tree again. If several edge
     slug: "course-schedule",
     title: "Course Schedule",
     difficulty: "Medium",
+    pattern: "topological-sort",
     tags: ["Graph", "Topological Sort"],
     description: `There are \`numCourses\` courses, labelled \`0\` to \`numCourses - 1\`. Each pair \`[a, b]\` in \`prerequisites\` means you must take course \`b\` before course \`a\`.
 
@@ -959,6 +1002,7 @@ Return \`True\` if you can finish every course, or \`False\` if the prerequisite
     slug: "network-delay-time",
     title: "Network Delay Time",
     difficulty: "Medium",
+    pattern: "advanced-graphs",
     tags: ["Graph", "Shortest Path", "Heap"],
     description: `A network has \`n\` nodes labelled \`1\` to \`n\`. Each \`times[i] = [u, v, w]\` is a **directed** edge: a signal takes \`w\` time to travel from \`u\` to \`v\`.
 
@@ -990,6 +1034,7 @@ class Solution:
     slug: "happy-number",
     title: "Happy Number",
     difficulty: "Easy",
+    pattern: "math-geometry",
     tags: ["Math", "Hash Table"],
     description: `Start with a positive integer \`n\` and repeatedly replace it with the **sum of the squares of its digits**. If this process reaches \`1\`, the number is **happy**. Otherwise it loops forever in a cycle that never includes 1.
 

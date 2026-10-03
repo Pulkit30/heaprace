@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/app/auth/actions";
+import { claimUserData, clearUserData } from "@/lib/drafts";
 
 interface Props {
   id: string;
@@ -14,6 +15,9 @@ interface Props {
 export default function UserMenu({ id, name, email, image }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  // A different account signing in on this browser starts with a clean editor and hint progress.
+  useEffect(() => claimUserData(id), [id]);
 
   useEffect(() => {
     if (!open) return;
@@ -37,7 +41,7 @@ export default function UserMenu({ id, name, email, image }: Props) {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Account menu"
-        className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-accent-fill text-sm font-semibold text-black"
+        className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-accent-fill text-sm font-semibold text-on-accent"
       >
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element -- avatar from the auth provider's domain
@@ -79,7 +83,7 @@ export default function UserMenu({ id, name, email, image }: Props) {
           >
             My submissions
           </Link>
-          <form action={signOut}>
+          <form action={signOut} onSubmit={clearUserData}>
             <button role="menuitem" className="w-full px-4 py-2 text-left text-sm text-muted transition-colors hover:bg-surface-2 hover:text-fg">
               Sign out
             </button>

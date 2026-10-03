@@ -1,6 +1,7 @@
 import "server-only";
 import { createNeonAuth } from "@neondatabase/auth/next/server";
 import { cookies } from "next/headers";
+import { unstable_rethrow } from "next/navigation";
 
 // Neon Auth (Managed Better Auth). Users and sessions live in the neon_auth schema of our database.
 export const auth = createNeonAuth({
@@ -14,8 +15,17 @@ export type SessionUser = { id: string; name: string; email: string; image?: str
 export async function getCurrentUser(): Promise<SessionUser | null> {
   // Tell Next.js this render depends on the request before the SDK reads cookies itself.
   await cookies();
-  const { data: session } = await auth.getSession();
-  return session?.user ?? null;
+  try {
+    const { data: session } = await auth.getSession();
+    return session?.user ?? null;
+  } catch (error) {
+    // Next.js's own control-flow signals (redirect, notFound, dynamic rendering) must pass through.
+    unstable_rethrow(error);
+    // Anything else, e.g. a stale session whose cookie can't be updated while a page renders,
+    // means "not signed in" rather than a crashed page. proxy.ts refreshes cookies before rendering.
+    console.warn("[auth] getSession failed; treating the visitor as signed out:", error instanceof Error ? error.message : error);
+    return null;
+  }
 }
 
 /** Only allow redirects to paths on this site, never to another origin. */

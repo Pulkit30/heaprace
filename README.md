@@ -29,7 +29,7 @@ Open http://localhost:3000.
 | `npm run verify:problems` | Check every test case against the reference solutions in `scripts/reference_solutions.py` |
 | `npm run db:generate` | Create a migration after changing `src/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations (uses the direct, non-pooled connection) |
-| `npm run db:seed` | Load `src/lib/problems.ts` into the database (safe to re-run) |
+| `npm run db:seed` | Load the hand-written problems and the `content/catalog` problems into the database (safe to re-run) |
 | `npm run db:studio` | Browse the database in Drizzle Studio |
 | `npm run test:streak` | Unit tests for streak and date logic |
 
@@ -49,9 +49,20 @@ Code drafts are kept in the browser (localStorage), like LeetCode.
 
 ## Adding a problem
 
-1. Add an entry to `src/lib/problems.ts` (mark a few tests `sample: true`).
-2. Add a reference solution to `scripts/reference_solutions.py` and register it in `REFERENCE`.
-3. `npm run verify:problems`, then `npm run db:seed`.
+There are two kinds of problems:
+
+- **Hand-written (the original 31):** add an entry to `src/lib/problems.ts` (mark a few tests `sample: true`) and a reference solution to `scripts/reference_solutions.py`, registered in `REFERENCE`.
+- **Catalog (everything else, organized by pattern):** add a function decorated with `@problem(...)` to a file in `content/catalog/`. The decorated function is the reference solution. Give it samples, extra tests and/or a `gen` input generator, and ideally a `brute` force to cross-check against. `content/build_catalog.py` computes every expected output, checks the hints, and assigns a stable id in `content/ids.json` (commit that file).
+
+Extra hidden tests live next to the problems: each `content/catalog/*.py` file has an `EXTRA` dict (and `content/basics_extra.py` covers the hand-written 31) with:
+
+- `edge`: hand-picked edge cases, cross-checked against the brute force;
+- `edge_nb`: boundary cases too big for the brute force;
+- `large`: near-limit inputs so slow (e.g. O(n²)) solutions time out. The reference must finish within 0.35 s locally, and each input is capped at about 150 KB.
+
+The build requires at least 6 hidden tests per problem.
+
+Then run `npm run verify:problems`, then `npm run db:seed`.
 
 ## How judging works
 

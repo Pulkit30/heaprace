@@ -46,7 +46,7 @@ export default async function Navbar() {
             </Link>
             <Link
               href="/auth/sign-up"
-              className="hidden rounded-md bg-accent-fill px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-accent-strong sm:inline-block"
+              className="hidden rounded-md bg-accent-fill px-3 py-1.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong sm:inline-block"
             >
               Sign up
             </Link>

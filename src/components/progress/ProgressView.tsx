@@ -52,7 +52,7 @@ export default function ProgressView({
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
       <div className="flex items-center gap-4">
         {image !== undefined && (
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-fill text-xl font-semibold text-black">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-fill text-xl font-semibold text-on-accent">
             {image ? (
               // eslint-disable-next-line @next/next/no-img-element -- avatar from the auth provider's domain
               <img src={image} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />

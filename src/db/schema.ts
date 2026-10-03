@@ -18,7 +18,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const difficultyEnum = pgEnum("difficulty", ["Easy", "Medium", "Hard"]);
-export const compareModeEnum = pgEnum("compare_mode", ["exact", "unordered", "unordered-deep"]);
+export const compareModeEnum = pgEnum("compare_mode", ["exact", "unordered", "unordered-deep", "approx"]);
 export const verdictEnum = pgEnum("verdict", ["Accepted", "Wrong Answer", "Runtime Error", "Time Limit Exceeded"]);
 export const raceStatusEnum = pgEnum("race_status", ["lobby", "running", "finished"]);
 
@@ -37,9 +37,15 @@ export const problems = pgTable("problems", {
   starterCode: text("starter_code").notNull(),
   compare: compareModeEnum("compare").notNull(),
   /** Per argument: "ListNode" / "TreeNode" to build from JSON, or null. Null column = plain JSON args. */
-  argTypes: text("arg_types").array().$type<("ListNode" | "TreeNode" | null)[]>(),
-  /** "ListNode" / "TreeNode" when the solution returns a node. */
-  returnType: text("return_type").$type<"ListNode" | "TreeNode">(),
+  argTypes: text("arg_types").array().$type<("ListNode" | "TreeNode" | "CycleList" | "NodeIndex" | "ListNodeArray" | "TreeNodeArray" | null)[]>(),
+  /** "ListNode" / "TreeNode" when the solution returns a node, "NodeIndex" for a node's position. */
+  returnType: text("return_type").$type<"ListNode" | "TreeNode" | "CycleList" | "NodeIndex" | "ListNodeArray" | "TreeNodeArray">(),
+  /** In-place problems: index of the argument the judge checks after the call. */
+  outArg: integer("out_arg"),
+  /** Design problems: functionName is a class, tests are operation sequences. */
+  design: boolean("design").notNull().default(false),
+  /** Roadmap pattern id from src/lib/roadmap.ts. */
+  patternId: text("pattern_id").notNull().default("arrays-hashing"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

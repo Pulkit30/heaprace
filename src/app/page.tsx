@@ -31,7 +31,7 @@ export default async function Home() {
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <Link
             href="/problems"
-            className="rounded-md bg-accent-fill px-5 py-2.5 font-medium text-black transition-colors hover:bg-accent-strong"
+            className="rounded-md bg-accent-fill px-5 py-2.5 font-medium text-on-accent transition-colors hover:bg-accent-strong"
           >
             Start solving
           </Link>

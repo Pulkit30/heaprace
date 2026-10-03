@@ -28,7 +28,7 @@ export default async function RaceHome() {
           <p className="mt-1 text-sm text-muted">Races need an account so standings and wins are saved.</p>
           <Link
             href="/auth/sign-in?next=/race"
-            className="mt-4 inline-block rounded-md bg-accent-fill px-4 py-2 text-sm font-medium text-black hover:bg-accent-strong"
+            className="mt-4 inline-block rounded-md bg-accent-fill px-4 py-2 text-sm font-medium text-on-accent hover:bg-accent-strong"
           >
             Sign in
           </Link>

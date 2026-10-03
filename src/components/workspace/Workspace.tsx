@@ -162,10 +162,15 @@ export default function Workspace({
     <div
       ref={rowRef}
       style={{ "--left": `${leftPct}%`, "--top": `${topPct}%` } as React.CSSProperties}
-      className={`flex min-h-0 flex-1 flex-col gap-2 p-2 lg:grid ${heightClass} lg:grid-cols-[var(--left)_6px_minmax(0,1fr)] lg:gap-0`}
+      /* lg:flex-none: flex-1 would override the fixed height and let long output stretch the page. */
+      className={`flex min-h-0 flex-1 flex-col gap-2 p-2 lg:grid lg:flex-none ${heightClass} lg:grid-cols-[var(--left)_6px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-0`}
     >
-      <section className="min-h-0 overflow-auto rounded-lg border border-line bg-surface">
-        <div className="sticky top-0 z-10 flex items-center gap-1 overflow-x-auto border-b border-line bg-surface px-2 text-sm">
+      <section
+        className={`flex min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-surface ${
+          leftTab === "tutor" ? "h-[70vh] lg:h-auto" : ""
+        }`}
+      >
+        <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-line bg-surface px-2 text-sm">
           <Link href="/problems" className="px-2 py-2 text-muted hover:text-fg" aria-label="Back to problems">
             ←
           </Link>
@@ -189,19 +194,23 @@ export default function Workspace({
           ))}
           {solved && <span className="ml-auto pr-2 text-xs font-medium text-easy">Solved ✓</span>}
         </div>
-        {leftTab === "description" ? (
-          <Description problem={problem} />
-        ) : leftTab === "extra" ? (
-          extraTab?.content
-        ) : leftTab === "tutor" ? (
+        {leftTab === "tutor" ? (
           <TutorPanel slug={problem.slug} lastResult={tutorContext(problem, result)} />
         ) : (
-          <SubmissionsPanel
-            submissions={submissions}
-            signedIn={signedIn}
-            signInHref={signInHref}
-            onLoadCode={loadCode}
-          />
+          <div className="min-h-0 flex-1 overflow-auto">
+            {leftTab === "description" ? (
+              <Description problem={problem} />
+            ) : leftTab === "extra" ? (
+              extraTab?.content
+            ) : (
+              <SubmissionsPanel
+                submissions={submissions}
+                signedIn={signedIn}
+                signInHref={signInHref}
+                onLoadCode={loadCode}
+              />
+            )}
+          </div>
         )}
       </section>
 
@@ -272,7 +281,7 @@ export default function Workspace({
             <button
               onClick={() => execute("submit")}
               disabled={busy}
-              className="rounded-md bg-accent-fill px-4 py-1.5 text-sm font-medium text-black transition-colors hover:bg-accent-strong disabled:opacity-50"
+              className="rounded-md bg-accent-fill px-4 py-1.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:opacity-50"
             >
               Submit
             </button>

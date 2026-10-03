@@ -1,6 +1,7 @@
-// The learning roadmap: 28 patterns arranged as a tree, NeetCode-style.
+// The learning roadmap: 32 patterns arranged as a tree, NeetCode-style.
 // `row` and `x` (percent of the width) place each node in the diagram; `parents` draw the connecting lines.
-// Keep this file free of runtime imports so scripts/verify-problems.ts can check it with Node.
+// Problems belong to a pattern through their own `pattern` field (problems.ts and the catalog in content/).
+// Keep this file free of runtime imports so scripts can load it directly with Node.
 
 export interface Pattern {
   id: string;
@@ -12,8 +13,6 @@ export interface Pattern {
   parents: string[];
   row: number;
   x: number;
-  /** Problem slugs in suggested order. */
-  problems: string[];
 }
 
 export const patterns: Pattern[] = [
@@ -26,7 +25,6 @@ export const patterns: Pattern[] = [
     parents: [],
     row: 0,
     x: 50,
-    problems: ["two-sum", "contains-duplicate"],
   },
 
   // Row 1
@@ -37,8 +35,16 @@ export const patterns: Pattern[] = [
     useWhen: "The problem asks about sums of ranges or subarrays, often many times.",
     parents: ["arrays-hashing"],
     row: 1,
-    x: 10,
-    problems: ["subarray-sum-equals-k"],
+    x: 7,
+  },
+  {
+    id: "knowing-what-to-track",
+    name: "Knowing What to Track",
+    summary: "Record just the right facts as you scan, such as counts, first positions or running totals, so each question is answered in one pass.",
+    useWhen: "Anagrams, frequencies, \"first unique\", or comparing character counts between strings.",
+    parents: ["arrays-hashing"],
+    row: 1,
+    x: 23,
   },
   {
     id: "cyclic-sort",
@@ -47,8 +53,7 @@ export const patterns: Pattern[] = [
     useWhen: "Find missing or duplicate numbers in an array of 1..n.",
     parents: ["arrays-hashing"],
     row: 1,
-    x: 28,
-    problems: ["find-all-numbers-disappeared-in-an-array"],
+    x: 39,
   },
   {
     id: "two-pointers",
@@ -57,8 +62,7 @@ export const patterns: Pattern[] = [
     useWhen: "The input is sorted, or you compare elements from both ends.",
     parents: ["arrays-hashing"],
     row: 1,
-    x: 46,
-    problems: ["trapping-rain-water"],
+    x: 56,
   },
   {
     id: "stack",
@@ -67,8 +71,7 @@ export const patterns: Pattern[] = [
     useWhen: "Matching brackets, undo operations, or evaluating nested expressions.",
     parents: ["arrays-hashing"],
     row: 1,
-    x: 66,
-    problems: ["valid-parentheses"],
+    x: 73,
   },
   {
     id: "matrix",
@@ -77,8 +80,7 @@ export const patterns: Pattern[] = [
     useWhen: "The input is a grid and you rotate, spiral or search it.",
     parents: ["arrays-hashing"],
     row: 1,
-    x: 86,
-    problems: ["spiral-matrix"],
+    x: 91,
   },
 
   // Row 2
@@ -90,7 +92,6 @@ export const patterns: Pattern[] = [
     parents: ["two-pointers"],
     row: 2,
     x: 10,
-    problems: ["merge-intervals"],
   },
   {
     id: "sliding-window",
@@ -99,8 +100,7 @@ export const patterns: Pattern[] = [
     useWhen: "Longest or shortest contiguous subarray or substring that meets a condition.",
     parents: ["two-pointers"],
     row: 2,
-    x: 28,
-    problems: ["best-time-to-buy-and-sell-stock", "longest-substring-without-repeating-characters"],
+    x: 27,
   },
   {
     id: "binary-search",
@@ -109,8 +109,7 @@ export const patterns: Pattern[] = [
     useWhen: "Sorted input, or \"find the smallest value that works\".",
     parents: ["two-pointers"],
     row: 2,
-    x: 46,
-    problems: ["search-in-rotated-sorted-array"],
+    x: 44,
   },
   {
     id: "linked-list",
@@ -119,8 +118,7 @@ export const patterns: Pattern[] = [
     useWhen: "Reversing, merging or reordering nodes in place.",
     parents: ["two-pointers"],
     row: 2,
-    x: 64,
-    problems: ["reverse-linked-list"],
+    x: 61,
   },
   {
     id: "monotonic-stack",
@@ -129,8 +127,7 @@ export const patterns: Pattern[] = [
     useWhen: "\"Next greater element\", daily temperatures, or largest rectangle problems.",
     parents: ["stack"],
     row: 2,
-    x: 84,
-    problems: ["daily-temperatures"],
+    x: 80,
   },
 
   // Row 3
@@ -141,28 +138,34 @@ export const patterns: Pattern[] = [
     useWhen: "Scheduling, jumping or choosing items where a simple rule always works.",
     parents: ["intervals"],
     row: 3,
-    x: 10,
-    problems: ["maximum-subarray"],
+    x: 8,
+  },
+  {
+    id: "sort-and-search",
+    name: "Sort and Search",
+    summary: "Sort the input first so binary search, two pointers or a greedy sweep become possible.",
+    useWhen: "Pairs or thresholds where the original order doesn't matter, or \"how many values are at most x\" questions.",
+    parents: ["binary-search"],
+    row: 3,
+    x: 25,
   },
   {
     id: "tree-dfs",
     name: "Tree DFS",
     summary: "Recurse into subtrees and combine their answers on the way back up.",
     useWhen: "Paths, depths, or properties that depend on whole subtrees.",
-    parents: ["binary-search", "linked-list"],
+    parents: ["binary-search","linked-list"],
     row: 3,
-    x: 37,
-    problems: ["maximum-depth-of-binary-tree"],
+    x: 43,
   },
   {
     id: "tree-bfs",
     name: "Tree BFS",
     summary: "Visit a tree level by level with a queue.",
     useWhen: "Level order, right side view, or the shortest depth.",
-    parents: ["binary-search", "linked-list"],
+    parents: ["binary-search","linked-list"],
     row: 3,
-    x: 55,
-    problems: ["binary-tree-level-order-traversal"],
+    x: 60,
   },
   {
     id: "fast-slow-pointers",
@@ -171,20 +174,27 @@ export const patterns: Pattern[] = [
     useWhen: "Cycle detection, or the middle of a linked list, in O(1) space.",
     parents: ["linked-list"],
     row: 3,
-    x: 75,
-    problems: ["find-the-duplicate-number"],
+    x: 77,
+  },
+  {
+    id: "custom-data-structures",
+    name: "Custom Data Structures",
+    summary: "Combine hash maps, lists, stacks and heaps inside a class so several operations are all fast.",
+    useWhen: "Design problems: caches, stacks with extra operations, time-based or snapshot stores.",
+    parents: ["linked-list"],
+    row: 3,
+    x: 93,
   },
 
   // Row 4
   {
-    id: "backtracking",
-    name: "Backtracking",
-    summary: "Build candidates one choice at a time and undo choices that can't lead to an answer.",
-    useWhen: "Generate all subsets, permutations or combinations, or solve puzzles.",
+    id: "subsets",
+    name: "Subsets",
+    summary: "Generate every subset, permutation or combination by extending partial results one element at a time.",
+    useWhen: "\"Return all possible…\" questions, where the answer itself is exponential in size.",
     parents: ["tree-dfs"],
     row: 4,
-    x: 22,
-    problems: ["subsets"],
+    x: 20,
   },
   {
     id: "tries",
@@ -193,8 +203,7 @@ export const patterns: Pattern[] = [
     useWhen: "Autocomplete, word search, or \"does any word start with…\".",
     parents: ["tree-dfs"],
     row: 4,
-    x: 40,
-    problems: ["replace-words"],
+    x: 42,
   },
   {
     id: "heap",
@@ -203,30 +212,18 @@ export const patterns: Pattern[] = [
     useWhen: "The k largest, smallest or most frequent items, or a running minimum.",
     parents: ["tree-bfs"],
     row: 4,
-    x: 60,
-    problems: ["kth-largest-element-in-an-array", "top-k-frequent-elements"],
+    x: 62,
   },
 
   // Row 5
   {
-    id: "dp-1d",
-    name: "1-D DP",
-    summary: "Solve each smaller subproblem once, store it, and build up to the answer.",
-    useWhen: "Counting ways or finding the best result, where each step depends on earlier steps.",
-    parents: ["backtracking"],
+    id: "backtracking",
+    name: "Backtracking",
+    summary: "Build candidates one choice at a time and undo choices that can't lead to an answer.",
+    useWhen: "Generate all subsets, permutations or combinations, or solve puzzles.",
+    parents: ["subsets"],
     row: 5,
-    x: 12,
-    problems: ["climbing-stairs"],
-  },
-  {
-    id: "graphs",
-    name: "Graphs",
-    summary: "Explore nodes and edges with BFS or DFS, tracking visited nodes.",
-    useWhen: "Islands in a grid, connected components, or cloning a network.",
-    parents: ["backtracking"],
-    row: 5,
-    x: 32,
-    problems: ["number-of-islands"],
+    x: 16,
   },
   {
     id: "two-heaps",
@@ -235,8 +232,7 @@ export const patterns: Pattern[] = [
     useWhen: "A running median, or balancing two halves of a stream.",
     parents: ["heap"],
     row: 5,
-    x: 56,
-    problems: ["ipo"],
+    x: 54,
   },
   {
     id: "k-way-merge",
@@ -245,30 +241,47 @@ export const patterns: Pattern[] = [
     useWhen: "Several sorted inputs that need combining, or the kth smallest across lists.",
     parents: ["heap"],
     row: 5,
-    x: 76,
-    problems: ["kth-smallest-element-in-a-sorted-matrix"],
+    x: 74,
   },
 
   // Row 6
+  {
+    id: "dp-1d",
+    name: "1-D DP",
+    summary: "Solve each smaller subproblem once, store it, and build up to the answer.",
+    useWhen: "Counting ways or finding the best result, where each step depends on earlier steps.",
+    parents: ["backtracking"],
+    row: 6,
+    x: 10,
+  },
+  {
+    id: "graphs",
+    name: "Graphs",
+    summary: "Explore nodes and edges with BFS or DFS, tracking visited nodes.",
+    useWhen: "Islands in a grid, connected components, or cloning a network.",
+    parents: ["backtracking"],
+    row: 6,
+    x: 32,
+  },
+
+  // Row 7
   {
     id: "bit-manipulation",
     name: "Bit Manipulation",
     summary: "Use AND, OR, XOR and shifts to work on individual bits.",
     useWhen: "Single numbers among pairs, counting bits, or sets encoded as bitmasks.",
     parents: ["dp-1d"],
-    row: 6,
-    x: 8,
-    problems: ["single-number"],
+    row: 7,
+    x: 7,
   },
   {
     id: "dp-2d",
     name: "2-D DP",
     summary: "A table of subproblems indexed by two things, like positions in two strings.",
     useWhen: "Grid paths, edit distance, or longest common subsequence.",
-    parents: ["dp-1d", "graphs"],
-    row: 6,
-    x: 24,
-    problems: ["longest-common-subsequence"],
+    parents: ["dp-1d","graphs"],
+    row: 7,
+    x: 23,
   },
   {
     id: "union-find",
@@ -276,9 +289,8 @@ export const patterns: Pattern[] = [
     summary: "Track which items are connected, merging groups in near-constant time.",
     useWhen: "Dynamic connectivity, redundant connections, or counting components.",
     parents: ["graphs"],
-    row: 6,
-    x: 42,
-    problems: ["redundant-connection"],
+    row: 7,
+    x: 41,
   },
   {
     id: "topological-sort",
@@ -286,9 +298,8 @@ export const patterns: Pattern[] = [
     summary: "Order the nodes of a directed acyclic graph so every edge points forward.",
     useWhen: "Prerequisites, build order, or course schedules.",
     parents: ["graphs"],
-    row: 6,
+    row: 7,
     x: 58,
-    problems: ["course-schedule"],
   },
   {
     id: "advanced-graphs",
@@ -296,9 +307,8 @@ export const patterns: Pattern[] = [
     summary: "Shortest paths and minimum spanning trees: Dijkstra, Bellman-Ford, Prim, Kruskal.",
     useWhen: "Weighted edges, cheapest routes, or connecting everything at minimum cost.",
     parents: ["graphs"],
-    row: 6,
-    x: 74,
-    problems: ["network-delay-time"],
+    row: 7,
+    x: 75,
   },
   {
     id: "math-geometry",
@@ -306,9 +316,8 @@ export const patterns: Pattern[] = [
     summary: "Number properties, modular arithmetic and coordinate tricks.",
     useWhen: "Rotating matrices, powers, primes, or points on a plane.",
     parents: ["graphs"],
-    row: 6,
-    x: 90,
-    problems: ["happy-number"],
+    row: 7,
+    x: 92,
   },
 ];
 

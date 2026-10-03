@@ -1,5 +1,5 @@
 // Module worker. Runs user Python in a Web Worker so an infinite loop can be killed (worker.terminate) without freezing the page.
-// Protocol:  in  { type: "run", id, code, functionName, args, argTypes?, returnType? }
+// Protocol:  in  { type: "run", id, code, functionName, args, argTypes?, returnType?, options? }
 //            out { type: "ready" } | { type: "init-error", error } | { type: "result", id, ok, result?, error?, stdout, timeMs }
 
 // Pyodide is self-hosted from /pyodide (copied from node_modules by scripts/copy-pyodide.ts).
@@ -34,6 +34,7 @@ onmessage = async ({ data }) => {
       JSON.stringify(data.args),
       JSON.stringify(data.argTypes ?? null),
       data.returnType ?? null,
+      JSON.stringify(data.options ?? null),
     );
     postMessage({ type: "result", id: data.id, timeMs: performance.now() - start, ...JSON.parse(raw) });
   } catch (err) {

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { problems } from "../src/lib/problems.ts";
 import { isCorrect, formatValue } from "../src/lib/judge/compare.ts";
 import { patterns } from "../src/lib/roadmap.ts";
+import { loadAllProblems } from "./catalog.ts";
 import { errorGuides, patternNotes, problemGuides } from "../src/lib/tutor/knowledge.ts";
 
 const refScript = fileURLToPath(new URL("./reference_solutions.py", import.meta.url));
@@ -43,29 +44,39 @@ for (const p of problems) {
   }
 }
 
+// The catalog (content/catalog/) verifies itself while building: every expected output is computed by a
+// reference solution and cross-checked against a brute force where one exists. Here we check the combined set.
+const all = loadAllProblems();
+console.log(`✓ catalog built: ${all.length - problems.length} problems, ${all.reduce((n, p) => n + p.tests.length, 0)} tests in total`);
+
 const roadmapErrors: string[] = [];
 const patternById = new Map(patterns.map((p) => [p.id, p]));
-if (patterns.length !== 28) roadmapErrors.push(`expected 28 patterns, found ${patterns.length}`);
+if (patterns.length !== 32) roadmapErrors.push(`expected 32 patterns, found ${patterns.length}`);
 if (patternById.size !== patterns.length) roadmapErrors.push("duplicate pattern id");
-const placed = new Set<string>();
 for (const pat of patterns) {
   for (const parent of pat.parents) {
     const pp = patternById.get(parent);
     if (!pp) roadmapErrors.push(`${pat.id}: unknown parent "${parent}"`);
     else if (pp.row >= pat.row) roadmapErrors.push(`${pat.id}: parent "${parent}" must be on an earlier row`);
   }
-  if (pat.problems.length === 0) roadmapErrors.push(`${pat.id}: has no problems`);
-  for (const slug of pat.problems) {
-    if (!slugs.has(slug)) roadmapErrors.push(`${pat.id}: unknown problem "${slug}"`);
-    if (placed.has(slug)) roadmapErrors.push(`${pat.id}: "${slug}" is already in another pattern`);
-    placed.add(slug);
-  }
 }
+const allSlugs = new Set<string>();
+const allIds = new Set<number>();
+const perPattern = new Map<string, number>();
+for (const p of all) {
+  if (allSlugs.has(p.slug)) roadmapErrors.push(`${p.slug}: duplicate slug`);
+  if (allIds.has(p.id)) roadmapErrors.push(`${p.slug}: duplicate id ${p.id}`);
+  allSlugs.add(p.slug);
+  allIds.add(p.id);
+  if (!patternById.has(p.pattern)) roadmapErrors.push(`${p.slug}: unknown pattern "${p.pattern}"`);
+  perPattern.set(p.pattern, (perPattern.get(p.pattern) ?? 0) + 1);
+}
+for (const pat of patterns) if (!perPattern.get(pat.id)) roadmapErrors.push(`${pat.id}: has no problems`);
 if (roadmapErrors.length) {
   failures += roadmapErrors.length;
   console.log(`✗ roadmap\n  ${roadmapErrors.join("\n  ")}`);
 } else {
-  console.log(`✓ roadmap (${patterns.length} patterns, ${placed.size}/${problems.length} problems placed)`);
+  console.log(`✓ roadmap (${patterns.length} patterns, ${all.length} problems)`);
 }
 
 const kbErrors: string[] = [];

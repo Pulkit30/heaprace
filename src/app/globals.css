@@ -11,9 +11,11 @@
   --line: #e4e6eb;
   --fg: #1f2328;
   --muted: #6b7280;
-  --accent: #f28a1f;
-  --accent-strong: #e0760c;
-  --accent-text: #c95f00;
+  /* Tailwind Orange: 600 for buttons, 700 for hover and for text on white (readable contrast). */
+  --accent: #ea580c;
+  --accent-strong: #c2410c;
+  --accent-text: #c2410c;
+  --on-accent: #ffffff;
   --easy: #00a38e;
   --medium: #d08c00;
   --hard: #e5484d;
@@ -27,9 +29,11 @@
   --line: #262b37;
   --fg: #e6e8ee;
   --muted: #8b93a7;
-  --accent: #ff8a3d;
-  --accent-strong: #ff7417;
-  --accent-text: #ff9a55;
+  /* Tailwind Orange, shifted lighter for dark backgrounds: 500 buttons, 600 hover, 400 text. */
+  --accent: #f97316;
+  --accent-strong: #ea580c;
+  --accent-text: #fb923c;
+  --on-accent: #ffffff;
   --easy: #2fcf7a;
   --medium: #f5b83d;
   --hard: #f0525f;
@@ -47,6 +51,8 @@
   --color-accent: var(--accent-text);
   --color-accent-fill: var(--accent);
   --color-accent-strong: var(--accent-strong);
+  /* Text and icons placed on an accent-filled button. */
+  --color-on-accent: var(--on-accent);
   --color-easy: var(--easy);
   --color-medium: var(--medium);
   --color-hard: var(--hard);

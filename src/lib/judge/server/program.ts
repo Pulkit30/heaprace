@@ -31,6 +31,9 @@ _has_alarm = hasattr(_signal, "setitimer")
 if _has_alarm:
     _signal.signal(_signal.SIGALRM, _on_alarm)
 
+# Large tests include deep trees and big grids, so recursive solutions get more room than Python's default 1000.
+_sys.setrecursionlimit(10_000)
+
 _real_stdout = _sys.stdout
 _payload = _json.loads(_sys.stdin.read())
 for _args in _payload["tests"]:
@@ -42,6 +45,7 @@ for _args in _payload["tests"]:
         _res = _json.loads(__heaprace_run(
             _payload["code"], _payload["functionName"], _json.dumps(_args),
             _json.dumps(_payload.get("argTypes")), _payload.get("returnType"),
+            _json.dumps(_payload.get("options")),
         ))
     except _TimeLimit:
         _res = {}
@@ -65,6 +69,7 @@ export function buildStdin(problem: Problem, code: string): string {
     tests: problem.tests.map((t) => t.args),
     argTypes: problem.argTypes ?? null,
     returnType: problem.returnType ?? null,
+    options: { outArg: problem.outArg ?? null, design: problem.design ?? false },
     timeLimit: PER_TEST_LIMIT_SEC,
   });
 }

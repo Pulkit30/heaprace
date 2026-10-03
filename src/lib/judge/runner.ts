@@ -96,7 +96,7 @@ class PythonRunner {
     code: string,
     functionName: string,
     args: unknown[],
-    nodes: { argTypes?: (NodeType | null)[]; returnType?: NodeType } = {},
+    nodes: { argTypes?: (NodeType | null)[]; returnType?: NodeType; outArg?: number; design?: boolean } = {},
   ): Promise<WorkerResult | "timeout"> {
     await this.ensureReady();
     const worker = this.worker!;
@@ -123,6 +123,7 @@ class PythonRunner {
         args,
         argTypes: nodes.argTypes ?? null,
         returnType: nodes.returnType ?? null,
+        options: { outArg: nodes.outArg ?? null, design: nodes.design ?? false },
       });
     });
   }

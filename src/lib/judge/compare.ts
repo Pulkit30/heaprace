@@ -18,7 +18,15 @@ function deepEqual(a: unknown, b: unknown): boolean {
 
 const sortByJson = (xs: unknown[]) => [...xs].sort((x, y) => (JSON.stringify(x) < JSON.stringify(y) ? -1 : 1));
 
+/** Like deepEqual, but numbers may differ by a relative 1e-5 (answers that are decimals). */
+function approxEqual(a: unknown, b: unknown): boolean {
+  if (typeof a === "number" && typeof b === "number") return Math.abs(a - b) <= 1e-5 * Math.max(1, Math.abs(b));
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((x, i) => approxEqual(x, b[i]));
+  return deepEqual(a, b);
+}
+
 export function isCorrect(actual: unknown, expected: unknown, mode: CompareMode): boolean {
+  if (mode === "approx") return approxEqual(actual, expected);
   if (mode === "exact" || !Array.isArray(actual) || !Array.isArray(expected)) {
     return deepEqual(actual, expected);
   }

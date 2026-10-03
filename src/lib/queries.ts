@@ -8,7 +8,7 @@ import type { Verdict } from "./judge/runner";
 import type { DayActivity } from "./streak";
 import type { Difficulty } from "./problems";
 
-export type ProblemSummary = Pick<Problem, "id" | "slug" | "title" | "difficulty" | "tags">;
+export type ProblemSummary = Pick<Problem, "id" | "slug" | "title" | "difficulty" | "tags" | "pattern">;
 export type ProblemStatus = "solved" | "attempted";
 
 export interface SubmissionRow {
@@ -34,6 +34,7 @@ export async function listProblems(): Promise<ProblemSummary[]> {
       title: problems.title,
       difficulty: problems.difficulty,
       tags: problems.tags,
+      pattern: problems.patternId,
     })
     .from(problems)
     .orderBy(asc(problems.id));
@@ -63,6 +64,9 @@ export const getProblem = cache(async (slug: string): Promise<Problem | null> =>
     compare: p.compare,
     argTypes: p.argTypes ?? undefined,
     returnType: p.returnType ?? undefined,
+    outArg: p.outArg ?? undefined,
+    design: p.design || undefined,
+    pattern: p.patternId,
     tests,
   };
 });

@@ -92,7 +92,7 @@ export default function AuthForm({ mode, next }: { mode: "sign-in" | "sign-up"; 
         <button
           type="submit"
           disabled={pending || googlePending}
-          className="w-full rounded-md bg-accent-fill px-3 py-2 text-sm font-medium text-black transition-colors hover:bg-accent-strong disabled:opacity-50"
+          className="w-full rounded-md bg-accent-fill px-3 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent-strong disabled:opacity-50"
         >
           {pending ? (isSignUp ? "Creating account…" : "Signing in…") : isSignUp ? "Create account" : "Sign in"}
         </button>

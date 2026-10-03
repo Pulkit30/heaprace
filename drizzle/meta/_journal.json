@@ -29,6 +29,13 @@
       "when": 1790692472101,
       "tag": "0003_tutor_kb",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791040234393,
+      "tag": "0004_catalog",
+      "breakpoints": true
     }
   ]
 }

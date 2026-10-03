@@ -10,7 +10,8 @@ interface Props {
   pattern: Pattern | null;
   patternsById: Map<string, Pattern>;
   childrenOf: (id: string) => Pattern[];
-  problemsBySlug: Map<string, ProblemSummary>;
+  /** The selected pattern's problems, in order. */
+  problems: ProblemSummary[];
   statuses: Record<string, ProblemStatus>;
   signedIn: boolean;
   onSelect: (id: string) => void;
@@ -22,7 +23,7 @@ export default function PatternDrawer({
   pattern,
   patternsById,
   childrenOf,
-  problemsBySlug,
+  problems,
   statuses,
   signedIn,
   onSelect,
@@ -39,7 +40,6 @@ export default function PatternDrawer({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  const problems = pattern?.problems.map((slug) => problemsBySlug.get(slug)).filter((p) => p !== undefined) ?? [];
   const solved = problems.filter((p) => statuses[p.slug] === "solved").length;
 
   const chip = "rounded-full border border-line px-2.5 py-0.5 text-xs text-muted transition-colors hover:border-accent-fill hover:text-fg";
